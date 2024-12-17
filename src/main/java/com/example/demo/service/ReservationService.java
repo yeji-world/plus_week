@@ -1,14 +1,13 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.ReservationResponseDto;
-import com.example.demo.entity.Item;
-import com.example.demo.entity.RentalLog;
-import com.example.demo.entity.Reservation;
-import com.example.demo.entity.User;
+import com.example.demo.entity.*;
 import com.example.demo.exception.ReservationConflictException;
 import com.example.demo.repository.ItemRepository;
 import com.example.demo.repository.ReservationRepository;
 import com.example.demo.repository.UserRepository;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,15 +22,18 @@ public class ReservationService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final RentalLogService rentalLogService;
+    private final JPAQueryFactory queryFactory;
 
     public ReservationService(ReservationRepository reservationRepository,
                               ItemRepository itemRepository,
                               UserRepository userRepository,
-                              RentalLogService rentalLogService) {
+                              RentalLogService rentalLogService,
+                              EntityManager entityManager) {
         this.reservationRepository = reservationRepository;
         this.itemRepository = itemRepository;
         this.userRepository = userRepository;
         this.rentalLogService = rentalLogService;
+        this.queryFactory = new JPAQueryFactory(entityManager);
     }
 
     // TODO: 1. 트랜잭션 이해
@@ -71,6 +73,7 @@ public class ReservationService {
     }
 
     // TODO: 5. QueryDSL 검색 개선
+
     public List<ReservationResponseDto> searchAndConvertReservations(Long userId, Long itemId) {
 
         List<Reservation> reservations = searchReservations(userId, itemId);
@@ -80,15 +83,20 @@ public class ReservationService {
 
     public List<Reservation> searchReservations(Long userId, Long itemId) {
 
-        if (userId != null && itemId != null) {
-            return reservationRepository.findByUserIdAndItemId(userId, itemId);
-        } else if (userId != null) {
-            return reservationRepository.findByUserId(userId);
-        } else if (itemId != null) {
-            return reservationRepository.findByItemId(itemId);
-        } else {
-            return reservationRepository.findAll();
+        QReservation reservation = QReservation.reservation;
+
+        var query = queryFactory.selectFrom(reservation)
+                .leftJoin(reservation.user).fetchJoin()
+                .leftJoin(reservation.item).fetchJoin();
+
+        if (userId != null) {
+            query.where(reservation.user.id.eq(userId));
         }
+        if (itemId != null) {
+            query.where(reservation.item.id.eq(itemId));
+        }
+
+        return query.fetch();
     }
 
     private List<ReservationResponseDto> convertToDto(List<Reservation> reservations) {
