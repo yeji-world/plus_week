@@ -116,21 +116,21 @@ public class ReservationService {
     public void updateReservationStatus(Long reservationId, Status status) {
         Reservation reservation = reservationRepository.findByIdOrElseThrow(reservationId);
 
-        if ("APPROVED".equals(status)) {
-            if (!"PENDING".equals(reservation.getStatus())) {
+        if (status == Status.APPROVED) {
+            if (reservation.getStatus() != Status.PENDING) {
                 throw new IllegalArgumentException("PENDING 상태만 APPROVED로 변경 가능합니다.");
             }
-            reservation.updateStatus("APPROVED");
-        } else if ("CANCELED".equals(status)) {
-            if ("EXPIRED".equals(reservation.getStatus())) {
+            reservation.updateStatus(Status.APPROVED);
+        } else if (status == Status.CANCELED) {
+            if (reservation.getStatus() == Status.EXPIRED) {
                 throw new IllegalArgumentException("EXPIRED 상태인 예약은 취소할 수 없습니다.");
             }
-            reservation.updateStatus("CANCELED");
-        } else if ("EXPIRED".equals(status)) {
-            if (!"PENDING".equals(reservation.getStatus())) {
+            reservation.updateStatus(Status.CANCELED);
+        } else if (status == Status.EXPIRED) {
+            if (reservation.getStatus() != Status.PENDING) {
                 throw new IllegalArgumentException("PENDING 상태만 EXPIRED로 변경 가능합니다.");
             }
-            reservation.updateStatus("EXPIRED");
+            reservation.updateStatus(Status.EXPIRED);
         } else {
             throw new IllegalArgumentException("올바르지 않은 상태: " + status);
         }
