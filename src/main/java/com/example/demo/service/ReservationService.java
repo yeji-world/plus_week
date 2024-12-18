@@ -38,7 +38,7 @@ public class ReservationService {
 
     // TODO: 1. 트랜잭션 이해
     @Transactional
-    public void createReservation(Long itemId, Long userId, LocalDateTime startAt, LocalDateTime endAt) {
+    public ReservationResponseDto createReservation(Long itemId, Long userId, LocalDateTime startAt, LocalDateTime endAt) {
         // 쉽게 데이터를 생성하려면 아래 유효성검사 주석 처리
         List<Reservation> haveReservations = reservationRepository.findConflictingReservations(itemId, startAt, endAt);
         if(!haveReservations.isEmpty()) {
@@ -52,6 +52,14 @@ public class ReservationService {
 
         RentalLog rentalLog = new RentalLog(savedReservation, "로그 메세지", "CREATE");
         rentalLogService.save(rentalLog);
+
+        return new ReservationResponseDto(
+                savedReservation.getId(),
+                user.getNickname(),
+                item.getName(),
+                savedReservation.getStartAt(),
+                savedReservation.getEndAt()
+        );
     }
 
     // TODO: 3. N+1 문제
@@ -113,7 +121,7 @@ public class ReservationService {
 
     // TODO: 7. 리팩토링
     @Transactional
-    public void updateReservationStatus(Long reservationId, Status status) {
+    public ReservationResponseDto updateReservationStatus(Long reservationId, Status status) {
         Reservation reservation = reservationRepository.findByIdOrElseThrow(reservationId);
 
         if (status == Status.APPROVED) {
@@ -121,25 +129,26 @@ public class ReservationService {
                 throw new IllegalArgumentException("PENDING 상태만 APPROVED로 변경 가능합니다.");
             }
             reservation.updateStatus(Status.APPROVED);
-            return;
-        }
-
-        if (status == Status.CANCELED) {
+        } else if (status == Status.CANCELED) {
             if (reservation.getStatus() == Status.EXPIRED) {
                 throw new IllegalArgumentException("EXPIRED 상태인 예약은 취소할 수 없습니다.");
             }
             reservation.updateStatus(Status.CANCELED);
-            return;
-        }
-
-        if (status == Status.EXPIRED) {
+        } else if (status == Status.EXPIRED) {
             if (reservation.getStatus() != Status.PENDING) {
                 throw new IllegalArgumentException("PENDING 상태만 EXPIRED로 변경 가능합니다.");
             }
             reservation.updateStatus(Status.EXPIRED);
-            return;
+        } else {
+            throw new IllegalArgumentException("올바르지 않은 상태: " + status);
         }
 
-        throw new IllegalArgumentException("올바르지 않은 상태: " + status);
+        return new ReservationResponseDto(
+                reservation.getId(),
+                reservation.getUser().getNickname(),
+                reservation.getItem().getName(),
+                reservation.getStartAt(),
+                reservation.getEndAt()
+        );
     }
 }
