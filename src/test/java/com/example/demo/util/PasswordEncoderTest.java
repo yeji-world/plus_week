@@ -11,7 +11,7 @@ class PasswordEncoderTest {
     private String wrongPassword;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         rawPassword = "test";
         encodedPassword = PasswordEncoder.encode(rawPassword);
         wrongPassword = "rest";
