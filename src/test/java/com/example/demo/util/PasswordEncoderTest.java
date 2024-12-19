@@ -18,7 +18,7 @@ class PasswordEncoderTest {
     }
 
     @Test
-    void testencode() {
+    void testEncode() {
         //given @BeforeEach
         //when @BeforeEach
 
@@ -28,7 +28,7 @@ class PasswordEncoderTest {
     }
 
     @Test
-    void testmatches() {
+    void testMatches() {
         //when
         boolean matches = PasswordEncoder.matches(rawPassword, encodedPassword);
 
@@ -37,7 +37,7 @@ class PasswordEncoderTest {
     }
 
     @Test
-    void testNotmatches() {
+    void testNotMatches() {
         //when
         boolean matches = PasswordEncoder.matches(wrongPassword, encodedPassword);
 
